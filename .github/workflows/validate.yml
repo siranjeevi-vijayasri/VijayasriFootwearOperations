@@ -1,3 +1,4 @@
+# CI validates TypeScript, lint rules and a production Next.js build.
 name: Operations app checks
 
 on:
