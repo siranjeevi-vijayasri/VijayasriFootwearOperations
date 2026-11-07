@@ -1,87 +1,94 @@
-const navigation = [
-  { label: "Dashboard", icon: "▦", active: true },
-  { label: "Products", icon: "◇" },
-  { label: "Suppliers", icon: "♧" },
-  { label: "Purchases", icon: "⇩" },
-  { label: "Inventory", icon: "▤" },
-  { label: "Sales & POS", icon: "▣" },
-  { label: "Customers", icon: "♙" },
-  { label: "Reports", icon: "▥" }
-];
+"use client";
 
-const metrics = [
-  { label: "Today's sales", value: "₹0.00", note: "No transactions recorded", icon: "↗" },
-  { label: "Gross profit", value: "₹0.00", note: "Based on completed sales", icon: "◈" },
-  { label: "Stock on hand", value: "—", note: "Awaiting inventory setup", icon: "▤" },
-  { label: "Low-stock items", value: "—", note: "Reorder alerts will appear here", icon: "!" }
-];
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
-export default function DashboardPage() {
-  return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <a className="brand" href="/" aria-label="Vijayasri Footwear Operations home">
-          <span className="brand-mark">V</span>
-          <span><strong>Vijayasri</strong><small>FOOTWEAR OPERATIONS</small></span>
-        </a>
-        <div className="workspace-label">WORKSPACE</div>
-        <nav className="nav-list" aria-label="Main navigation">
-          {navigation.map((item) => (
-            <div className={item.active ? "nav-item active" : "nav-item disabled"} key={item.label}>
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
-              <span>{item.label}</span>
-              {!item.active && <span className="soon">Soon</span>}
-            </div>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="store-avatar">VF</div>
-          <div><strong>Vijayasri Footwear</strong><small>Retail workspace</small></div>
-        </div>
-      </aside>
-
-      <section className="main-panel">
-        <header className="topbar">
-          <div className="breadcrumb">Workspace <span>/</span> Dashboard</div>
-          <div className="topbar-right"><span className="environment"><i /> Development</span><div className="user-avatar">O</div></div>
-        </header>
-
-        <div className="page-content">
-          <div className="page-heading">
-            <div><p className="eyebrow">OVERVIEW</p><h1>Good day</h1><p className="subheading">Here&apos;s what&apos;s happening at your store.</p></div>
-            <span className="date-label">Operations workspace</span>
-          </div>
-
-          <section className="metric-grid" aria-label="Business overview">
-            {metrics.map((metric) => (
-              <article className="metric-card" key={metric.label}>
-                <div className="metric-top"><span>{metric.label}</span><span className="metric-icon">{metric.icon}</span></div>
-                <strong className="metric-value">{metric.value}</strong>
-                <p>{metric.note}</p>
-              </article>
-            ))}
-          </section>
-
-          <section className="content-grid">
-            <article className="panel activity-panel">
-              <div className="panel-heading"><div><h2>Recent activity</h2><p>Your latest store transactions and updates</p></div><span className="panel-tag">LIVE DATA PENDING</span></div>
-              <div className="empty-state"><div className="empty-icon">↻</div><strong>Activity will show up here</strong><p>Once products, purchases and sales are connected, you&apos;ll see a live timeline of store activity.</p></div>
-            </article>
-            <article className="panel setup-panel">
-              <div className="panel-heading"><div><h2>Getting started</h2><p>Set up your operations workspace</p></div></div>
-              <ol className="setup-list">
-                <li className="complete"><span>✓</span><div><strong>Project workspace created</strong><small>Dedicated repository established</small></div></li>
-                <li><span>2</span><div><strong>Connect the operations database</strong><small>Create a separate Supabase project</small></div></li>
-                <li><span>3</span><div><strong>Set up products and SKU variants</strong><small>Track each size and colour separately</small></div></li>
-                <li><span>4</span><div><strong>Start recording stock movements</strong><small>Purchases, sales, returns and adjustments</small></div></li>
-              </ol>
-            </article>
-          </section>
-
-          <div className="notice"><span className="notice-icon">i</span><p><strong>Development foundation</strong> — This dashboard currently uses placeholder values. Live sales, inventory and profit figures will appear only after the database and transaction workflows are implemented and tested.</p></div>
-          <footer>Vijayasri Footwear Operations <span>•</span> Foundation build</footer>
-        </div>
-      </section>
-    </main>
-  );
+type Product = { id:string; name:string; brand:string; sku:string; audience:string; type:string; size:string; color:string; mrp:number; price:number; cost:number; stock:number; reorder:number; imageUrl:string };
+type Supplier = { id:string; name:string; contact:string; phone:string; email:string; gstin:string; balance:number };
+type Customer = { id:string; name:string; phone:string; email:string; notes:string };
+type Staff = { id:string; name:string; email:string; role:string; active:boolean };
+type Purchase = { id:string; supplier:string; product:string; quantity:number; unitCost:number; total:number; date:string; status:string };
+type Sale = { id:string; product:string; quantity:number; unitPrice:number; subtotal:number; tax:number; total:number; payment:string; billType:string; customer:string; date:string };
+type Movement = { id:string; product:string; quantity:number; reason:string; source:string; date:string };
+type Store = { products:Product[]; suppliers:Supplier[]; customers:Customer[]; staff:Staff[]; purchases:Purchase[]; sales:Sale[]; movements:Movement[] };
+type Tab = "Dashboard"|"Products"|"Suppliers"|"Purchases"|"Inventory"|"Sales & POS"|"Customers"|"Staff"|"Reports";
+type Values = Record<string,string>;
+const EMPTY:Store={products:[],suppliers:[],customers:[],staff:[],purchases:[],sales:[],movements:[]};
+const tabs: {name:Tab;icon:string;group:string}[]=[
+{name:"Dashboard",icon:"▦",group:"OVERVIEW"},{name:"Products",icon:"◇",group:"CATALOGUE"},{name:"Inventory",icon:"▤",group:"CATALOGUE"},
+{name:"Suppliers",icon:"♧",group:"PROCUREMENT"},{name:"Purchases",icon:"⇩",group:"PROCUREMENT"},
+{name:"Sales & POS",icon:"▣",group:"SELLING"},{name:"Customers",icon:"♙",group:"SELLING"},{name:"Staff",icon:"♚",group:"ADMINISTRATION"},{name:"Reports",icon:"▥",group:"ADMINISTRATION"}];
+const id=()=>globalThis.crypto?.randomUUID?.()??`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const today=()=>new Date().toISOString().slice(0,10);
+const money=(n:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2}).format(n||0);
+const number=(v:string)=>Number(v)||0;
+function Field({label,name,value,onChange,type="text",required=false,placeholder=""}:{label:string;name:string;value:string;onChange:(name:string,value:string)=>void;type?:string;required?:boolean;placeholder?:string}){
+ return <label className="field"><span>{label}</span><input name={name} type={type} value={value} required={required} placeholder={placeholder} onChange={e=>onChange(name,e.target.value)}/></label>;
 }
+function Choice({label,name,value,options,onChange}:{label:string;name:string;value:string;options:string[];onChange:(name:string,value:string)=>void}){
+ return <label className="field"><span>{label}</span><select name={name} value={value} onChange={e=>onChange(name,e.target.value)}>{options.map(o=><option key={o}>{o}</option>)}</select></label>;
+}
+function PanelTitle({title,description,action}:{title:string;description?:string;action?:React.ReactNode}){return <div className="panel-title"><div><h2>{title}</h2>{description&&<p>{description}</p>}</div>{action}</div>;}
+function Empty({title,detail}:{title:string;detail:string}){return <div className="empty"><div className="empty-mark">◇</div><strong>{title}</strong><p>{detail}</p></div>;}
+function DataTable({headers,children}:{headers:string[];children:React.ReactNode}){return <div className="table-wrap"><table><thead><tr>{headers.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{children}</tbody></table></div>;}
+
+export default function OperationsPage(){
+ const [store,setStore]=useState<Store>(EMPTY);
+ const [hydrated,setHydrated]=useState(false);
+ const [tab,setTab]=useState<Tab>("Dashboard");
+ const [values,setValues]=useState<Values>({});
+ const [query,setQuery]=useState("");
+ const [notice,setNotice]=useState("");
+ const [showForm,setShowForm]=useState(false);
+ useEffect(()=>{try{const saved=localStorage.getItem("vijayasri-operations-demo-v1");if(saved){const parsed=JSON.parse(saved) as Store;setStore({...EMPTY,...parsed});}}catch{setNotice("Saved local demo data could not be read. Starting with an empty workspace.");}setHydrated(true);},[]);
+ useEffect(()=>{if(hydrated){localStorage.setItem("vijayasri-operations-demo-v1",JSON.stringify(store));}},[store,hydrated]);
+ const update=(name:string,value:string)=>setValues(v=>({...v,[name]:value}));
+ const reset=()=>{setValues({});setShowForm(false);};
+ const addMovement=(product:Product,quantity:number,reason:string,source:string)=>({id:id(),product:product.name,quantity,reason,source,date:new Date().toISOString()});
+ const filteredProducts=useMemo(()=>store.products.filter(p=>[p.name,p.brand,p.sku,p.size,p.color].join(" ").toLowerCase().includes(query.toLowerCase())),[store.products,query]);
+ const salesToday=store.sales.filter(s=>s.date===today());
+ const salesValue=salesToday.reduce((a,s)=>a+s.total,0);
+ const grossProfit=store.sales.reduce((a,s)=>{const p=store.products.find(x=>x.id===s.product);return a+s.quantity*(s.unitPrice-(p?.cost??0));},0);
+ const stockUnits=store.products.reduce((a,p)=>a+p.stock,0);
+ const lowStock=store.products.filter(p=>p.stock<=p.reorder);
+ const allSales=store.sales.reduce((a,s)=>a+s.total,0);
+ const setPage=(t:Tab)=>{setTab(t);setQuery("");setNotice("");reset();};
+ const notify=(s:string)=>{setNotice(s);setShowForm(false);setValues({});};
+ const startForm=(defaults:Values={})=>{setValues(defaults);setShowForm(true);setNotice("");};
+ const saveProduct=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const p:Product={id:id(),name:values.name.trim(),brand:values.brand.trim(),sku:values.sku.trim(),audience:values.audience||"Unisex",type:values.type||"Casual",size:values.size||"Mixed",color:values.color||"—",mrp:number(values.mrp),price:number(values.price),cost:number(values.cost),stock:number(values.stock),reorder:number(values.reorder),imageUrl:values.imageUrl||""};if(store.products.some(x=>x.sku.toLowerCase()===p.sku.toLowerCase())){setNotice("That SKU already exists. Please use a unique SKU.");return;}setStore(s=>({...s,products:[p,...s.products],movements:p.stock?[addMovement(p,p.stock,"Opening stock","Product setup"),...s.movements]:s.movements}));notify("Product and SKU created.");};
+ const saveSupplier=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();setStore(s=>({...s,suppliers:[{id:id(),name:values.name.trim(),contact:values.contact||"",phone:values.phone||"",email:values.email||"",gstin:values.gstin||"",balance:number(values.balance)},...s.suppliers]}));notify("Supplier added.");};
+ const saveCustomer=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();setStore(s=>({...s,customers:[{id:id(),name:values.name.trim(),phone:values.phone||"",email:values.email||"",notes:values.notes||""},...s.customers]}));notify("Customer added.");};
+ const saveStaff=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();setStore(s=>({...s,staff:[{id:id(),name:values.name.trim(),email:values.email,role:values.role||"Cashier",active:true},...s.staff]}));notify("Staff member added. Access is recorded locally only until authentication is configured.");};
+ const savePurchase=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const p=store.products.find(x=>x.id===values.product);if(!p){setNotice("Select a product first.");return;}const qty=number(values.quantity),cost=number(values.unitCost);if(qty<=0||cost<0){setNotice("Enter a valid quantity and unit cost.");return;}const received=values.status==="Received";const purchase:Purchase={id:id(),supplier:values.supplier||"Unassigned",product:p.name,quantity:qty,unitCost:cost,total:qty*cost,date:values.date||today(),status:values.status||"Received"};setStore(s=>({...s,purchases:[purchase,...s.purchases],products:s.products.map(x=>x.id===p.id?{...x,stock:x.stock+(received?qty:0),cost}:x),movements:received?[addMovement(p,qty,"Purchase receipt",purchase.id),...s.movements]:s.movements}));notify(received?"Purchase recorded and stock received.":"Purchase order recorded. Stock has not been increased.");};
+ const saveAdjustment=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const p=store.products.find(x=>x.id===values.product);if(!p){setNotice("Select a product.");return;}const qty=number(values.quantity);if(!qty||p.stock+qty<0){setNotice("Adjustment must be non-zero and cannot make stock negative.");return;}setStore(s=>({...s,products:s.products.map(x=>x.id===p.id?{...x,stock:x.stock+qty}:x),movements:[addMovement(p,qty,values.reason||"Manual adjustment","Adjustment"),...s.movements]}));notify("Inventory adjustment saved.");};
+ const saveSale=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const p=store.products.find(x=>x.id===values.product);if(!p){setNotice("Select a product.");return;}const qty=number(values.quantity),price=number(values.unitPrice||String(p.price)),taxRate=values.billType==="GST"?number(values.taxRate):0;if(qty<=0||qty>p.stock){setNotice(`Insufficient stock. Available quantity: ${p.stock}.`);return;}const subtotal=qty*price,tax=subtotal*taxRate/100;const sale:Sale={id:id(),product:p.name,quantity:qty,unitPrice:price,subtotal,tax,total:subtotal+tax,payment:values.payment||"Cash",billType:values.billType||"Non-GST",customer:values.customer||"Walk-in",date:today()};setStore(s=>({...s,sales:[sale,...s.sales],products:s.products.map(x=>x.id===p.id?{...x,stock:x.stock-qty}:x),movements:[addMovement(p,-qty,"POS sale",sale.id),...s.movements]}));notify(`Sale saved. Total ${money(sale.total)}. Stock reduced by ${qty}.`);};
+ const exportCsv=(filename:string,rows:string[][])=>{const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);};
+ const renderForm=()=>{
+ if(!showForm)return null;
+ const formProps={onChange:update};
+ let body:React.ReactNode=null;
+ if(tab==="Products")body=<><Field label="Product / model name" name="name" value={values.name||""} onChange={update} required/><Field label="Brand" name="brand" value={values.brand||""} onChange={update} required/><Field label="SKU (unique)" name="sku" value={values.sku||""} onChange={update} required/><Choice label="Audience" name="audience" value={values.audience||"Men"} options={["Men","Women","Kids","Unisex"]} onChange={update}/><Choice label="Footwear type" name="type" value={values.type||"Casual"} options={["Casual","Formal","Sports","Sandals","Slippers","School","Boots","Other"]} onChange={update}/><Field label="Size / size range" name="size" value={values.size||""} onChange={update} placeholder="e.g. 6, 7, 8 or 6-10"/><Field label="Colour" name="color" value={values.color||""} onChange={update}/><Field label="MRP (₹)" name="mrp" type="number" value={values.mrp||""} onChange={update} required/><Field label="Selling price (₹)" name="price" type="number" value={values.price||""} onChange={update} required/><Field label="Unit cost (₹)" name="cost" type="number" value={values.cost||""} onChange={update}/><Field label="Opening stock" name="stock" type="number" value={values.stock||"0"} onChange={update}/><Field label="Low-stock threshold" name="reorder" type="number" value={values.reorder||"2"} onChange={update}/><Field label="Image URL (optional)" name="imageUrl" value={values.imageUrl||""} onChange={update}/></>;
+ if(tab==="Suppliers")body=<><Field label="Supplier / company name" name="name" value={values.name||""} onChange={update} required/><Field label="Contact person" name="contact" value={values.contact||""} onChange={update}/><Field label="Phone" name="phone" value={values.phone||""} onChange={update}/><Field label="Email" name="email" value={values.email||""} onChange={update}/><Field label="GSTIN" name="gstin" value={values.gstin||""} onChange={update}/><Field label="Opening balance (₹)" name="balance" type="number" value={values.balance||"0"} onChange={update}/></>;
+ if(tab==="Customers")body=<><Field label="Customer name" name="name" value={values.name||""} onChange={update} required/><Field label="Phone" name="phone" value={values.phone||""} onChange={update}/><Field label="Email" name="email" value={values.email||""} onChange={update}/><Field label="Notes" name="notes" value={values.notes||""} onChange={update}/></>;
+ if(tab==="Staff")body=<><Field label="Staff name" name="name" value={values.name||""} onChange={update} required/><Field label="Email" name="email" value={values.email||""} onChange={update} required/><Choice label="Role" name="role" value={values.role||"Cashier"} options={["Owner","Admin","Manager","Cashier","Inventory","Purchase"]} onChange={update}/></>;
+ if(tab==="Purchases")body=<><Choice label="Supplier" name="supplier" value={values.supplier||""} options={["",...store.suppliers.map(s=>s.name)]} onChange={update}/><Choice label="Product / SKU" name="product" value={values.product||""} options={["",...store.products.map(p=>p.id)]} onChange={update}/>{values.product&&<p className="hint">{store.products.find(p=>p.id===values.product)?.sku}</p>}<Field label="Quantity" name="quantity" type="number" value={values.quantity||"1"} onChange={update} required/><Field label="Unit cost (₹)" name="unitCost" type="number" value={values.unitCost||""} onChange={update} required/><Field label="Purchase date" name="date" type="date" value={values.date||today()} onChange={update}/><Choice label="Receipt status" name="status" value={values.status||"Received"} options={["Received","Ordered","Partially received"]} onChange={update}/></>;
+ if(tab==="Inventory")body=<><Choice label="Product / SKU" name="product" value={values.product||""} options={["",...store.products.map(p=>p.id)]} onChange={update}/><Field label="Adjustment (+/- units)" name="quantity" type="number" value={values.quantity||""} onChange={update} required/><Choice label="Reason" name="reason" value={values.reason||"Stock count correction"} options={["Stock count correction","Damaged stock","Found stock","Write-off","Transfer in","Transfer out"]} onChange={update}/></>;
+ if(tab==="Sales & POS")body=<><Choice label="Product / SKU" name="product" value={values.product||""} options={["",...store.products.map(p=>p.id)]} onChange={update}/>{values.product&&<p className="hint">Available: {store.products.find(p=>p.id===values.product)?.stock} · List price: {money(store.products.find(p=>p.id===values.product)?.price||0)}</p>}<Field label="Quantity" name="quantity" type="number" value={values.quantity||"1"} onChange={update} required/><Field label="Unit selling price (₹)" name="unitPrice" type="number" value={values.unitPrice||String(store.products.find(p=>p.id===values.product)?.price||"")} onChange={update}/><Choice label="Bill type" name="billType" value={values.billType||"Non-GST"} options={["Non-GST","GST"]} onChange={update}/>{values.billType==="GST"&&<Field label="Tax rate (%) — confirm applicable rate" name="taxRate" type="number" value={values.taxRate||"0"} onChange={update}/>}<Choice label="Payment method" name="payment" value={values.payment||"Cash"} options={["Cash","UPI","Card","Bank transfer","Credit"]} onChange={update}/><Choice label="Customer" name="customer" value={values.customer||"Walk-in"} options={["Walk-in",...store.customers.map(c=>c.name)]} onChange={update}/></>;
+ return <form className="form-card" onSubmit={tab==="Products"?saveProduct:tab==="Suppliers"?saveSupplier:tab==="Customers"?saveCustomer:tab==="Staff"?saveStaff:tab==="Purchases"?savePurchase:tab==="Inventory"?saveAdjustment:saveSale}><div className="form-grid">{body}</div><div className="form-actions"><button type="button" className="button secondary" onClick={reset}>Cancel</button><button type="submit" className="button primary">{tab==="Sales & POS"?"Complete sale":tab==="Inventory"?"Save adjustment":"Save record"}</button></div></form>;
+ };
+ const searchBox=<input className="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search this list…"/>;
+ const headerAction=(label:string,fn:()=>void)=><button className="button primary" onClick={fn}>＋ {label}</button>;
+ const tableEmpty=(colSpan:number,message:string)=><tr><td colSpan={colSpan} className="empty-cell">{message}</td></tr>;
+ const renderContent=()=>{
+ if(tab==="Dashboard")return <><div className="metric-grid"><Metric label="Today's sales" value={money(salesValue)} note={`${salesToday.length} transactions today`} icon="↗"/><Metric label="Gross profit (recorded)" value={money(grossProfit)} note="Sales less current product cost basis" icon="◈"/><Metric label="Units in stock" value={String(stockUnits)} note={`${store.products.length} product SKUs`} icon="▤"/><Metric label="Low-stock SKUs" value={String(lowStock.length)} note="At or below reorder threshold" icon="!" /></div><div className="two-col"><section className="panel"><PanelTitle title="Recent sales" description="Latest completed POS transactions" action={<button className="text-button" onClick={()=>setPage("Sales & POS")}>Open POS →</button>}/>{store.sales.length?<DataTable headers={["Receipt","Product","Qty","Total"]}>{store.sales.slice(0,6).map(s=><tr key={s.id}><td>{s.id.slice(0,8).toUpperCase()}</td><td>{s.product}</td><td>{s.quantity}</td><td>{money(s.total)}</td></tr>)}</DataTable>:<Empty title="No sales recorded yet" detail="Complete a POS sale to see it here."/ >}</section><section className="panel"><PanelTitle title="Stock alerts" description="Products requiring attention"/>{lowStock.length?<DataTable headers={["SKU / Product","On hand"]}>{lowStock.slice(0,6).map(p=><tr key={p.id}><td><strong>{p.name}</strong><small>{p.sku}</small></td><td><span className="pill warning">{p.stock} left</span></td></tr>)}</DataTable>:<Empty title="No low-stock alerts" detail="Add products and set reorder levels to monitor stock."/ >}</section></div><section className="panel"><PanelTitle title="Getting started" description="A suggested setup sequence"/><div className="steps"><span>01 · Add product SKUs</span><span>02 · Add suppliers</span><span>03 · Record purchases</span><span>04 · Start billing at POS</span></div></section></>;
+ if(tab==="Products")return <section className="panel"><PanelTitle title="Product catalogue" description="One row per sellable SKU variant. Size and colour are tracked per SKU." action={headerAction("Add product",()=>startForm())}/>{searchBox}{showForm&&renderForm()}{store.products.length?<DataTable headers={["SKU","Product / model","Brand","Audience","Size / colour","MRP","Selling","Cost","Stock"]}>{filteredProducts.map(p=><tr key={p.id}><td className="mono">{p.sku}</td><td><strong>{p.name}</strong></td><td>{p.brand}</td><td>{p.audience}</td><td>{p.size} / {p.color}</td><td>{money(p.mrp)}</td><td>{money(p.price)}</td><td>{money(p.cost)}</td><td><span className={p.stock<=p.reorder?"pill warning":"pill"}>{p.stock}</span></td></tr>)}</DataTable>:<Empty title="No products yet" detail="Add your first product model and SKU variant to start managing stock."/ >}</section>;
+ if(tab==="Suppliers")return <section className="panel"><PanelTitle title="Suppliers" description="Supplier contacts, GSTIN and opening balances" action={headerAction("Add supplier",()=>startForm())}/>{showForm&&renderForm()}{store.suppliers.length?<DataTable headers={["Supplier","Contact","Phone","GSTIN","Balance"]}>{store.suppliers.map(s=><tr key={s.id}><td><strong>{s.name}</strong><small>{s.email}</small></td><td>{s.contact||"—"}</td><td>{s.phone||"—"}</td><td className="mono">{s.gstin||"—"}</td><td>{money(s.balance)}</td></tr>)}</DataTable>:<Empty title="No suppliers added" detail="Create supplier records before recording purchase bills."/ >}</section>;
+ if(tab==="Purchases")return <section className="panel"><PanelTitle title="Purchases" description="Purchase orders, bills and goods receipt" action={headerAction("Record purchase",()=>startForm({status:"Received",date:today(),quantity:"1"}))}/>{showForm&&renderForm()}{store.purchases.length?<DataTable headers={["Reference","Date","Supplier","Product","Qty","Unit cost","Total","Status"]}>{store.purchases.map(p=><tr key={p.id}><td className="mono">{p.id.slice(0,8).toUpperCase()}</td><td>{p.date}</td><td>{p.supplier}</td><td>{p.product}</td><td>{p.quantity}</td><td>{money(p.unitCost)}</td><td>{money(p.total)}</td><td><span className="pill">{p.status}</span></td></tr>)}</DataTable>:<Empty title="No purchases recorded" detail="Record a purchase. Stock is added only when the receipt status is Received."/ >}</section>;
+ if(tab==="Inventory")return <><section className="panel"><PanelTitle title="Inventory" description="Live local stock by SKU, plus an auditable movement history" action={headerAction("Adjust stock",()=>startForm())}/>{showForm&&renderForm()}{store.products.length?<DataTable headers={["SKU","Product","Size","Colour","On hand","Reorder at","Status"]}>{store.products.map(p=><tr key={p.id}><td className="mono">{p.sku}</td><td>{p.name}</td><td>{p.size}</td><td>{p.color}</td><td><strong>{p.stock}</strong></td><td>{p.reorder}</td><td><span className={p.stock<=p.reorder?"pill warning":"pill success"}>{p.stock<=p.reorder?"Reorder":"Healthy"}</span></td></tr>)}</DataTable>:<Empty title="Inventory is empty" detail="Add products with opening stock or record a purchase receipt."/ >}</section><section className="panel"><PanelTitle title="Stock movement ledger" description="Receipts, sales and manual adjustments"/>{store.movements.length?<DataTable headers={["Date","Product","Movement","Reason","Source"]}>{store.movements.map(m=><tr key={m.id}><td>{new Date(m.date).toLocaleString("en-IN")}</td><td>{m.product}</td><td className={m.quantity<0?"negative":"positive"}>{m.quantity>0?"+":""}{m.quantity}</td><td>{m.reason}</td><td>{m.source}</td></tr>)}</DataTable>:<Empty title="No stock movements" detail="Every recorded stock change will be listed here."/ >}</section></>;
+ if(tab==="Sales & POS")return <><section className="panel"><PanelTitle title="Point of sale" description="Walk-in billing with stock validation and payment tracking" action={headerAction("New sale",()=>startForm({billType:"Non-GST",payment:"Cash",quantity:"1"}))}/>{showForm&&renderForm()}{store.sales.length?<DataTable headers={["Receipt","Date","Product","Qty","Customer","Bill","Payment","Total"]}>{store.sales.map(s=><tr key={s.id}><td className="mono">{s.id.slice(0,8).toUpperCase()}</td><td>{s.date}</td><td>{s.product}</td><td>{s.quantity}</td><td>{s.customer}</td><td>{s.billType}</td><td>{s.payment}</td><td><strong>{money(s.total)}</strong></td></tr>)}</DataTable>:<Empty title="No sales yet" detail="Add products and stock, then create your first POS transaction."/ >}</section><div className="notice"><span>i</span><p>Tax rate is entered by the operator for each GST bill. Confirm the applicable HSN and GST rate with your accountant. This prototype does not yet generate compliant tax invoices, PDFs, refunds or payment gateway transactions.</p></div></>;
+ if(tab==="Customers")return <section className="panel"><PanelTitle title="Customers" description="Customer directory and contact information" action={headerAction("Add customer",()=>startForm())}/>{showForm&&renderForm()}{store.customers.length?<DataTable headers={["Customer","Phone","Email","Notes"]}>{store.customers.map(c=><tr key={c.id}><td><strong>{c.name}</strong></td><td>{c.phone||"—"}</td><td>{c.email||"—"}</td><td>{c.notes||"—"}</td></tr>)}</DataTable>:<Empty title="No customers added" detail="Add customer profiles for repeat sales and customer selection at POS."/ >}</section>;
+ if(tab==="Staff")return <section className="panel"><PanelTitle title="Staff directory" description="Role assignments for planning access control" action={headerAction("Add staff",()=>startForm())}/>{showForm&&renderForm()}{store.staff.length?<DataTable headers={["Staff member","Email","Assigned role","Status"]}>{store.staff.map(s=><tr key={s.id}><td><strong>{s.name}</strong></td><td>{s.email}</td><td><span className="pill">{s.role}</span></td><td>{s.active?"Active":"Inactive"}</td></tr>)}</DataTable>:<Empty title="No staff records" detail="Add staff members and assign intended roles. Login and permissions require Supabase Auth."/ >}<div className="notice"><span>i</span><p>Role labels are informational in this local prototype. They do not restrict access. Enforced staff permissions will be implemented with authenticated server-side checks and database row-level security.</p></div></section>;
+ return <><section className="metric-grid"><Metric label="Total sales" value={money(allSales)} note={`${store.sales.length} receipts`} icon="↗"/><Metric label="Recorded gross margin" value={money(grossProfit)} note="Calculated using current product cost" icon="◈"/><Metric label="Purchase value" value={money(store.purchases.reduce((a,p)=>a+p.total,0))} note="Recorded purchase entries" icon="⇩"/><Metric label="Inventory units" value={String(stockUnits)} note="Current SKU quantities" icon="▤"/></section><section className="panel"><PanelTitle title="Reports" description="Export the current local demo records as CSV"/><div className="report-actions"><button className="button secondary" onClick={()=>exportCsv("vijayasri-products.csv",[["SKU","Product","Brand","Audience","Size","Colour","MRP","Price","Cost","Stock"],...store.products.map(p=>[p.sku,p.name,p.brand,p.audience,p.size,p.color,String(p.mrp),String(p.price),String(p.cost),String(p.stock)])])}>Export products</button><button className="button secondary" onClick={()=>exportCsv("vijayasri-sales.csv",[["Receipt","Date","Product","Qty","Unit price","Subtotal","Tax","Total","Payment","Bill type","Customer"],...store.sales.map(s=>[s.id,s.date,s.product,String(s.quantity),String(s.unitPrice),String(s.subtotal),String(s.tax),String(s.total),s.payment,s.billType,s.customer])])}>Export sales</button><button className="button secondary" onClick={()=>exportCsv("vijayasri-purchases.csv",[["Reference","Date","Supplier","Product","Qty","Unit cost","Total","Status"],...store.purchases.map(p=>[p.id,p.date,p.supplier,p.product,String(p.quantity),String(p.unitCost),String(p.total),p.status])])}>Export purchases</button><button className="button secondary" onClick={()=>exportCsv("vijayasri-stock-ledger.csv",[["Date","Product","Quantity","Reason","Source"],...store.movements.map(m=>[m.date,m.product,String(m.quantity),m.reason,m.source])])}>Export stock ledger</button></div><div className="report-note">Profit is an indicative prototype calculation using the current product cost field. For accurate realised profit, the production database will preserve cost snapshots on each sale and purchase.</div></section></>;
+ };
+ return <main className="app-shell"><aside className="sidebar"><a className="brand" href="#" onClick={e=>{e.preventDefault();setPage("Dashboard");}}><span className="brand-mark">V</span><span><strong>Vijayasri</strong><small>FOOTWEAR OPERATIONS</small></span></a><div className="workspace-label">WORKSPACE</div><nav className="nav-list" aria-label="Main navigation">{tabs.map(t=><button key={t.name} className={tab===t.name?"nav-item active":"nav-item"} onClick={()=>setPage(t.name)}><span className="nav-icon">{t.icon}</span><span>{t.name}</span></button>)}</nav><div className="sidebar-bottom"><div className="store-avatar">VF</div><div><strong>Vijayasri Footwear</strong><small>Local demo workspace</small></div></div></aside><section className="main-panel"><header className="topbar"><div className="breadcrumb">Workspace <span>/</span> {tab}</div><div className="topbar-right"><span className="environment"><i/> Local demo · {hydrated?"Saved":"Loading"}</span><button className="user-avatar" title="Demo workspace">VF</button></div></header><div className="page-content"><div className="page-heading"><div><p className="eyebrow">{tab==="Dashboard"?"OVERVIEW":"OPERATIONS"}</p><h1>{tab==="Dashboard"?"Store overview":tab}</h1><p className="subheading">{tab==="Dashboard"?"A consolidated view of your store activity.":`Manage ${tab.toLowerCase()} in one workspace.`}</p></div>{tab!=="Dashboard"&&<span className="date-label">Vijayasri Footwear</span>}</div>{notice&&<div className="toast" role="status">{notice}<button onClick={()=>setNotice("")}>×</button></div>}{renderContent()}<footer>Vijayasri Footwear Operations <span>•</span> Local demo data is stored in this browser only</footer></div></section></main>;
+}
+function Metric({label,value,note,icon}:{label:string;value:string;note:string;icon:string}){return <article className="metric-card"><div className="metric-top"><span>{label}</span><span className="metric-icon">{icon}</span></div><strong className="metric-value">{value}</strong><p>{note}</p></article>;}
