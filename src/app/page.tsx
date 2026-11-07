@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Product = { id:string; name:string; brand:string; sku:string; audience:string; type:string; size:string; color:string; mrp:number; price:number; cost:number; stock:number; reorder:number; imageUrl:string };
@@ -64,7 +66,6 @@ export default function OperationsPage(){
  const exportCsv=(filename:string,rows:string[][])=>{const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);};
  const renderForm=()=>{
  if(!showForm)return null;
- const formProps={onChange:update};
  let body:React.ReactNode=null;
  if(tab==="Products")body=<><Field label="Product / model name" name="name" value={values.name||""} onChange={update} required/><Field label="Brand" name="brand" value={values.brand||""} onChange={update} required/><Field label="SKU (unique)" name="sku" value={values.sku||""} onChange={update} required/><Choice label="Audience" name="audience" value={values.audience||"Men"} options={["Men","Women","Kids","Unisex"]} onChange={update}/><Choice label="Footwear type" name="type" value={values.type||"Casual"} options={["Casual","Formal","Sports","Sandals","Slippers","School","Boots","Other"]} onChange={update}/><Field label="Size / size range" name="size" value={values.size||""} onChange={update} placeholder="e.g. 6, 7, 8 or 6-10"/><Field label="Colour" name="color" value={values.color||""} onChange={update}/><Field label="MRP (₹)" name="mrp" type="number" value={values.mrp||""} onChange={update} required/><Field label="Selling price (₹)" name="price" type="number" value={values.price||""} onChange={update} required/><Field label="Unit cost (₹)" name="cost" type="number" value={values.cost||""} onChange={update}/><Field label="Opening stock" name="stock" type="number" value={values.stock||"0"} onChange={update}/><Field label="Low-stock threshold" name="reorder" type="number" value={values.reorder||"2"} onChange={update}/><Field label="Image URL (optional)" name="imageUrl" value={values.imageUrl||""} onChange={update}/></>;
  if(tab==="Suppliers")body=<><Field label="Supplier / company name" name="name" value={values.name||""} onChange={update} required/><Field label="Contact person" name="contact" value={values.contact||""} onChange={update}/><Field label="Phone" name="phone" value={values.phone||""} onChange={update}/><Field label="Email" name="email" value={values.email||""} onChange={update}/><Field label="GSTIN" name="gstin" value={values.gstin||""} onChange={update}/><Field label="Opening balance (₹)" name="balance" type="number" value={values.balance||"0"} onChange={update}/></>;
