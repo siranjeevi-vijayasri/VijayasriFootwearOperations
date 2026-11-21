@@ -1,7 +1,5 @@
 "use client";
 
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Product = { id:string; name:string; brand:string; sku:string; audience:string; type:string; size:string; color:string; mrp:number; price:number; cost:number; stock:number; reorder:number; imageUrl:string };
