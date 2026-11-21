@@ -41,7 +41,8 @@ begin
   end if;
   insert into public.audit_events(actor_id,action,entity_type,entity_id,before_data,after_data)
   values (auth.uid(),lower(tg_op),tg_table_name,v_id,v_before,v_after);
-  return coalesce(new,old);
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
 end;
 $$;
 
