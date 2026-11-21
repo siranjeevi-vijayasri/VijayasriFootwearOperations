@@ -154,6 +154,7 @@ grant execute on function public.ops_approve_sale_return(uuid) to authenticated;
 
 -- Apply role-scoped policies rather than granting every staff role every action.
 drop policy if exists "active staff access" on public.products;
+drop policy if exists "active staff access" on public.product_colours;
 drop policy if exists "active staff access" on public.product_variants;
 drop policy if exists "active staff access" on public.product_images;
 drop policy if exists "active staff access" on public.inventory_balances;
@@ -168,6 +169,9 @@ drop policy if exists "active staff access" on public.sale_items;
 drop policy if exists "active staff access" on public.integration_outbox;
 
 create policy "catalogue staff access" on public.products for all to authenticated
+  using(public.ops_has_role(array['owner','admin','manager','inventory']))
+  with check(public.ops_has_role(array['owner','admin','manager','inventory']));
+create policy "colour staff access" on public.product_colours for all to authenticated
   using(public.ops_has_role(array['owner','admin','manager','inventory']))
   with check(public.ops_has_role(array['owner','admin','manager','inventory']));
 create policy "variant staff access" on public.product_variants for all to authenticated
