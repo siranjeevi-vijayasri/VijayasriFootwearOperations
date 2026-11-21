@@ -12,7 +12,7 @@
 
 - One product model contains one or more colour/size SKU variants.
 - Each sellable size + colour combination has a unique SKU.
-- Model images and colour-specific image galleries are stored as separate image records.
+- Model images and colour-specific image galleries are stored as separate image records; colour galleries are shared across all size SKUs of that colour.
 - Images support both Storage uploads and externally hosted HTTPS URLs.
 - Each gallery has a primary image, ordering and alt text.
 - The public catalogue groups by brand + model and renders colour swatches; selecting a swatch changes the gallery and available-size list.
@@ -28,7 +28,7 @@ Apply these files in order to the dedicated Operations Supabase project only:
 
 These migrations establish the relational product/variant/image model, inventory balances and ledger, idempotent reservations, purchase receipt, POS sale, customer return request/approval, staff profiles, role-aware RLS, audit events, image Storage and private invoice/document Storage.
 
-The migrations do not migrate live catalogue records and do not connect the two Supabase projects. Back up the target project and review the SQL in a staging project before applying it to production.
+The migrations do not migrate live catalogue records and do not connect the two Supabase projects. The Operations schema keeps colour options separate from size SKUs so one gallery can be reused across every size of the same colour. Back up the target project and review the SQL in a staging project before applying it to production.
 
 ## Still required before live shop transactions
 
