@@ -1,4 +1,5 @@
 # CI validates TypeScript, lint rules and a production Next.js build.
+# Keep the production-readiness feature branch in the push matrix.
 name: Operations app checks
 
 on:
