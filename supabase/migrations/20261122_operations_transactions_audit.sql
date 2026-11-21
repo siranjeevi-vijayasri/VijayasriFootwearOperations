@@ -49,6 +49,9 @@ $$;
 drop trigger if exists audit_products on public.products;
 create trigger audit_products after insert or update or delete on public.products
 for each row execute function public.ops_audit_row();
+drop trigger if exists audit_product_colours on public.product_colours;
+create trigger audit_product_colours after insert or update or delete on public.product_colours
+for each row execute function public.ops_audit_row();
 drop trigger if exists audit_product_variants on public.product_variants;
 create trigger audit_product_variants after insert or update or delete on public.product_variants
 for each row execute function public.ops_audit_row();
