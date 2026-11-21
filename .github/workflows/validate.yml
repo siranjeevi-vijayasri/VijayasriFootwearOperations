@@ -31,4 +31,4 @@ jobs:
       - name: Production build
         run: npm run build
 
-# Revalidate after lint rule compatibility fixes.
+# Revalidate after lint rule compatibility and schema updates.
