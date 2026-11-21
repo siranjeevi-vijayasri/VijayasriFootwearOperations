@@ -81,6 +81,8 @@ create index if not exists product_images_colour_order_idx on public.product_ima
 create index if not exists product_images_variant_order_idx on public.product_images(variant_id, sort_order);
 create unique index if not exists product_images_one_primary_model
   on public.product_images(product_id) where product_id is not null and is_primary;
+create unique index if not exists product_images_one_primary_colour
+  on public.product_images(colour_id) where colour_id is not null and is_primary;
 create unique index if not exists product_images_one_primary_variant
   on public.product_images(variant_id) where variant_id is not null and is_primary;
 
