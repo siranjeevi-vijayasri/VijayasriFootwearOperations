@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - feature/operations-platform-foundation
+      - feature/production-readiness-model-colour
   pull_request:
     branches:
       - main
