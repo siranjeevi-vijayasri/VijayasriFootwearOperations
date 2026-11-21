@@ -25,8 +25,9 @@ Apply these files in order to the dedicated Operations Supabase project only:
 1. `supabase/migrations/20261121_operations_core.sql`
 2. `supabase/migrations/20261122_operations_transactions_audit.sql`
 3. `supabase/migrations/20261123_sales_returns_role_rls.sql`
+4. `supabase/migrations/20261124_immutable_ledger_permissions.sql`
 
-These migrations establish the relational product/variant/image model, inventory balances and ledger, idempotent reservations, purchase receipt, POS sale, customer return request/approval, staff profiles, role-aware RLS, audit events, image Storage and private invoice/document Storage.
+These migrations establish the relational product/colour/SKU/image model, inventory balances and ledger, idempotent reservations, purchase receipt, POS sale, customer return request/approval, staff profiles, role-aware RLS, audit events, image Storage and private invoice/document Storage.
 
 The migrations do not migrate live catalogue records and do not connect the two Supabase projects. The Operations schema keeps colour options separate from size SKUs so one gallery can be reused across every size of the same colour. Back up the target project and review the SQL in a staging project before applying it to production.
 
